@@ -4,6 +4,7 @@ target/
 
 # Frontend
 frontend/node_modules/
+frontend/node/
 frontend/dist/
 
 # IDE
