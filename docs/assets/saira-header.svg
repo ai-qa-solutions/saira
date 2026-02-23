@@ -1,0 +1,539 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 280" width="900" height="280">
+  <defs>
+    <!-- Ocean gradient background -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e27"/>
+      <stop offset="40%" stop-color="#141b3d"/>
+      <stop offset="70%" stop-color="#1a1145"/>
+      <stop offset="100%" stop-color="#0d0b2e"/>
+    </linearGradient>
+
+    <!-- Fish body gradient (silvery-blue saira) -->
+    <linearGradient id="fishBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6ea8d7"/>
+      <stop offset="30%" stop-color="#a8d8ea"/>
+      <stop offset="60%" stop-color="#c0c0c8"/>
+      <stop offset="100%" stop-color="#e8e8f0"/>
+    </linearGradient>
+
+    <!-- Fish back (dark blue-green like real saira) -->
+    <linearGradient id="fishBack" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a3a5c"/>
+      <stop offset="100%" stop-color="#2d6a8a"/>
+    </linearGradient>
+
+    <!-- AI highlight glow -->
+    <linearGradient id="aiGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c5ce0"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c5ce0"/>
+    </linearGradient>
+
+    <!-- Subtle glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Text glow -->
+    <filter id="textGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Bubble glow -->
+    <filter id="bubbleGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Water caustics pattern -->
+    <radialGradient id="caustic1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7c5ce0" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#7c5ce0" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Clip path for magnifying glass lens -->
+    <clipPath id="lensClip">
+      <circle cx="18" cy="35" r="35"/>
+    </clipPath>
+
+    <!-- Book cover gradient -->
+    <linearGradient id="bookCover1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a1f4e"/>
+      <stop offset="100%" stop-color="#3a2f5e"/>
+    </linearGradient>
+    <linearGradient id="bookCover2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2a4a"/>
+      <stop offset="100%" stop-color="#2e3a5a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="280" rx="16" fill="url(#bg)"/>
+
+  <!-- Subtle border -->
+  <rect width="900" height="280" rx="16" fill="none" stroke="#7c5ce0" stroke-opacity="0.15" stroke-width="1"/>
+
+  <!-- Animated caustic light effects -->
+  <ellipse cx="200" cy="100" rx="120" ry="80" fill="url(#caustic1)">
+    <animate attributeName="cx" values="200;280;200" dur="12s" repeatCount="indefinite"/>
+    <animate attributeName="rx" values="120;150;120" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="6s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="650" cy="180" rx="100" ry="70" fill="url(#caustic1)">
+    <animate attributeName="cx" values="650;580;650" dur="10s" repeatCount="indefinite"/>
+    <animate attributeName="ry" values="70;100;70" dur="7s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="9s" repeatCount="indefinite"/>
+  </ellipse>
+
+  <!-- ====== FISH (stylized Pacific saury / saira) ====== -->
+  <g transform="translate(100, 84)">
+    <!-- Swimming animation: gentle up-down bob + slight rotation -->
+    <animateTransform attributeName="transform" type="translate" values="100,84; 105,77; 100,84" dur="4s" repeatCount="indefinite"/>
+
+    <!-- Fish shadow / depth -->
+    <ellipse cx="90" cy="52" rx="60" ry="8" fill="#0a0e27" opacity="0.3">
+      <animate attributeName="ry" values="8;6;8" dur="4s" repeatCount="indefinite"/>
+    </ellipse>
+
+    <!-- Main body - long slender saira shape -->
+    <path d="M 0,30 Q 15,5 60,2 Q 100,-2 140,8 Q 165,15 175,30 Q 165,45 140,52 Q 100,62 60,58 Q 15,55 0,30 Z"
+          fill="url(#fishBody)" opacity="0.95"/>
+
+    <!-- Dark back stripe (characteristic of saira) -->
+    <path d="M 20,22 Q 50,5 90,3 Q 130,2 155,12 Q 165,18 170,25 Q 150,15 120,10 Q 80,6 40,12 Z"
+          fill="url(#fishBack)" opacity="0.7"/>
+
+    <!-- Belly highlight -->
+    <path d="M 15,38 Q 40,52 80,55 Q 120,56 150,48 Q 160,44 165,38 Q 150,46 120,50 Q 80,52 40,46 Z"
+          fill="white" opacity="0.15"/>
+
+    <!-- Tail fin -->
+    <path d="M 0,30 L -18,12 Q -8,25 -5,30 Q -8,35 -18,48 Z"
+          fill="#5a9abd" opacity="0.8">
+      <!-- Tail wag animation -->
+      <animate attributeName="d"
+               values="M 0,30 L -18,12 Q -8,25 -5,30 Q -8,35 -18,48 Z;
+                       M 0,30 L -14,16 Q -6,26 -4,30 Q -6,34 -14,44 Z;
+                       M 0,30 L -18,12 Q -8,25 -5,30 Q -8,35 -18,48 Z"
+               dur="1.2s" repeatCount="indefinite"/>
+    </path>
+
+    <!-- Dorsal fin (small, far back - like real saira) -->
+    <path d="M 35,12 Q 42,0 52,6 Q 48,10 42,12 Z"
+          fill="#4a8aaa" opacity="0.7"/>
+
+    <!-- Small adipose fin (saira characteristic) -->
+    <path d="M 18,15 Q 22,10 27,13 Z" fill="#5a9abd" opacity="0.5"/>
+
+    <!-- Pectoral fin -->
+    <path d="M 120,35 Q 130,45 118,50 Q 122,42 120,35 Z"
+          fill="#6ea8d7" opacity="0.5">
+      <animate attributeName="d"
+               values="M 120,35 Q 130,45 118,50 Q 122,42 120,35 Z;
+                       M 120,35 Q 128,48 115,52 Q 120,43 120,35 Z;
+                       M 120,35 Q 130,45 118,50 Q 122,42 120,35 Z"
+               dur="2s" repeatCount="indefinite"/>
+    </path>
+
+    <!-- Anal fin (small) -->
+    <path d="M 30,50 Q 35,58 42,52 Q 38,52 30,50 Z"
+          fill="#5a9abd" opacity="0.5"/>
+
+    <!-- Lateral line -->
+    <line x1="155" y1="30" x2="25" y2="30" stroke="#b0c4d8" stroke-width="0.5" opacity="0.3"/>
+
+    <!-- Eye -->
+    <circle cx="150" cy="27" r="5.5" fill="#0a0e27"/>
+    <circle cx="150" cy="27" r="4" fill="#1a2a4a"/>
+    <circle cx="150" cy="27" r="2.5" fill="#0d1020"/>
+    <circle cx="151.5" cy="25.5" r="1.2" fill="white" opacity="0.9"/>
+
+    <!-- AI circuit pattern on the fish (subtle tech overlay) -->
+    <g opacity="0.2" stroke="#a78bfa" stroke-width="0.6" fill="none">
+      <path d="M 130,25 L 110,25 L 100,20"/>
+      <path d="M 130,35 L 105,35 L 95,30"/>
+      <path d="M 110,25 L 110,35"/>
+      <circle cx="100" cy="20" r="1.5" fill="#a78bfa"/>
+      <circle cx="95" cy="30" r="1.5" fill="#a78bfa"/>
+      <circle cx="110" cy="30" r="1.5" fill="#a78bfa"/>
+      <!-- Pulsing nodes -->
+      <circle cx="100" cy="20" r="1.5" fill="#a78bfa">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="95" cy="30" r="1.5" fill="#a78bfa">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+
+    <!-- Gill mark -->
+    <path d="M 140,20 Q 137,30 140,40" stroke="#4a7a9a" stroke-width="0.8" fill="none" opacity="0.4"/>
+  </g>
+
+  <!-- ====== BUBBLES (scattered across the entire scene) ====== -->
+  <g filter="url(#bubbleGlow)">
+
+    <!-- == Near fish (left zone) == -->
+    <circle cx="260" cy="95" r="3" fill="none" stroke="#a78bfa" stroke-width="0.6" opacity="0.5">
+      <animate attributeName="cy" values="95;40;-10" dur="5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0.3;0" dur="5s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="260;265;262" dur="5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="240" cy="105" r="2" fill="none" stroke="#7c5ce0" stroke-width="0.5" opacity="0.4">
+      <animate attributeName="cy" values="105;55;10" dur="6s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.4;0.2;0" dur="6s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="240;243;238" dur="6s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="250" cy="88" r="1.5" fill="none" stroke="#a78bfa" stroke-width="0.4" opacity="0.3">
+      <animate attributeName="cy" values="88;45;5" dur="4.5s" begin="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.3;0.15;0" dur="4.5s" begin="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="270" cy="100" r="2.5" fill="none" stroke="#c4b5fd" stroke-width="0.5" opacity="0.35">
+      <animate attributeName="cy" values="100;50;0" dur="7s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.35;0.2;0" dur="7s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="270;275;268" dur="7s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Extra near fish -->
+    <circle cx="120" cy="160" r="1.8" fill="none" stroke="#7c5ce0" stroke-width="0.5" opacity="0.3">
+      <animate attributeName="cy" values="160;90;20" dur="6.5s" begin="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.35;0" dur="6.5s" begin="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="120;124;118" dur="6.5s" begin="0.3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="195" cy="140" r="1.2" fill="none" stroke="#a78bfa" stroke-width="0.4" opacity="0.25">
+      <animate attributeName="cy" values="140;70;-5" dur="5.5s" begin="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.3;0" dur="5.5s" begin="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="85" cy="180" r="2.2" fill="none" stroke="#c4b5fd" stroke-width="0.5" opacity="0.2">
+      <animate attributeName="cy" values="180;100;15" dur="7.5s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.3;0" dur="7.5s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="85;82;87" dur="7.5s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- == Left edge == -->
+    <circle cx="40" cy="200" r="1.5" fill="none" stroke="#7c5ce0" stroke-width="0.4" opacity="0.2">
+      <animate attributeName="cy" values="200;120;30" dur="8s" begin="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.25;0" dur="8s" begin="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="40;44;38" dur="8s" begin="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="55" cy="240" r="2" fill="none" stroke="#a78bfa" stroke-width="0.45" opacity="0.2">
+      <animate attributeName="cy" values="240;140;40" dur="9s" begin="4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.25;0" dur="9s" begin="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="30" cy="150" r="1" fill="none" stroke="#c4b5fd" stroke-width="0.35" opacity="0.2">
+      <animate attributeName="cy" values="150;80;10" dur="5s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.2;0" dur="5s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- == Center zone (around title) == -->
+    <circle cx="380" cy="220" r="2" fill="none" stroke="#a78bfa" stroke-width="0.5" opacity="0.25">
+      <animate attributeName="cy" values="220;130;30" dur="8.5s" begin="0.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.3;0" dur="8.5s" begin="0.8s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="380;384;377" dur="8.5s" begin="0.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="450" cy="250" r="1.5" fill="none" stroke="#7c5ce0" stroke-width="0.4" opacity="0.2">
+      <animate attributeName="cy" values="250;150;40" dur="9.5s" begin="3.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.25;0" dur="9.5s" begin="3.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="520" cy="230" r="1.8" fill="none" stroke="#c4b5fd" stroke-width="0.45" opacity="0.2">
+      <animate attributeName="cy" values="230;120;20" dur="7.8s" begin="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.28;0" dur="7.8s" begin="2s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="520;516;523" dur="7.8s" begin="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="410" cy="260" r="1.2" fill="none" stroke="#a78bfa" stroke-width="0.35" opacity="0.18">
+      <animate attributeName="cy" values="260;160;50" dur="10s" begin="5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.22;0" dur="10s" begin="5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="490" cy="200" r="2.5" fill="none" stroke="#7c5ce0" stroke-width="0.5" opacity="0.2">
+      <animate attributeName="cy" values="200;100;-10" dur="8s" begin="1.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.25;0" dur="8s" begin="1.2s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="490;494;488" dur="8s" begin="1.2s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- == Right zone (near magnifier / books) == -->
+    <circle cx="650" cy="210" r="2" fill="none" stroke="#a78bfa" stroke-width="0.5" opacity="0.25">
+      <animate attributeName="cy" values="210;110;10" dur="7s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.3;0" dur="7s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="650;654;648" dur="7s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="780" cy="190" r="1.5" fill="none" stroke="#c4b5fd" stroke-width="0.4" opacity="0.2">
+      <animate attributeName="cy" values="190;100;5" dur="8s" begin="2.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.25;0" dur="8s" begin="2.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="820" cy="230" r="2.2" fill="none" stroke="#7c5ce0" stroke-width="0.5" opacity="0.2">
+      <animate attributeName="cy" values="230;120;10" dur="9s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.28;0" dur="9s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="820;816;823" dur="9s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="700" cy="250" r="1.3" fill="none" stroke="#a78bfa" stroke-width="0.4" opacity="0.18">
+      <animate attributeName="cy" values="250;150;40" dur="8.5s" begin="4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.22;0" dur="8.5s" begin="4s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- == Far right edge == -->
+    <circle cx="860" cy="180" r="1.8" fill="none" stroke="#c4b5fd" stroke-width="0.45" opacity="0.2">
+      <animate attributeName="cy" values="180;80;-10" dur="7.5s" begin="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.25;0" dur="7.5s" begin="3s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="860;856;862" dur="7.5s" begin="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="840" cy="260" r="1" fill="none" stroke="#7c5ce0" stroke-width="0.35" opacity="0.15">
+      <animate attributeName="cy" values="260;170;60" dur="9s" begin="6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.2;0" dur="9s" begin="6s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- == Top area (tiny, subtle) == -->
+    <circle cx="150" cy="50" r="1" fill="none" stroke="#a78bfa" stroke-width="0.3" opacity="0.15">
+      <animate attributeName="cy" values="50;20;-10" dur="3.5s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.18;0" dur="3.5s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="600" cy="40" r="1.2" fill="none" stroke="#c4b5fd" stroke-width="0.35" opacity="0.15">
+      <animate attributeName="cy" values="40;15;-10" dur="3s" begin="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.18;0" dur="3s" begin="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="340" cy="55" r="0.8" fill="none" stroke="#7c5ce0" stroke-width="0.3" opacity="0.12">
+      <animate attributeName="cy" values="55;25;-5" dur="3s" begin="4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.15;0" dur="3s" begin="4s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- == Bottom area (larger, slower) == -->
+    <circle cx="300" cy="270" r="2.5" fill="none" stroke="#a78bfa" stroke-width="0.5" opacity="0.15">
+      <animate attributeName="cy" values="270;160;40" dur="10s" begin="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.22;0" dur="10s" begin="2s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="300;305;298" dur="10s" begin="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="560" cy="265" r="1.8" fill="none" stroke="#7c5ce0" stroke-width="0.45" opacity="0.15">
+      <animate attributeName="cy" values="265;155;35" dur="10.5s" begin="3.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.2;0" dur="10.5s" begin="3.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="170" cy="260" r="3" fill="none" stroke="#c4b5fd" stroke-width="0.55" opacity="0.15">
+      <animate attributeName="cy" values="260;140;20" dur="11s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.2;0" dur="11s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="cx" values="170;174;167" dur="11s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="750" cy="270" r="2" fill="none" stroke="#a78bfa" stroke-width="0.45" opacity="0.12">
+      <animate attributeName="cy" values="270;170;50" dur="10s" begin="5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.2;0" dur="10s" begin="5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ====== Small particle fish in background (school of saira) ====== -->
+  <g opacity="0.12">
+    <!-- Fish 1 -->
+    <g>
+      <path d="M 0,0 Q 4,-2 8,0 Q 4,2 0,0 Z M -2,0 L -4,-2 M -2,0 L -4,2" fill="#6ea8d7" stroke="#6ea8d7" stroke-width="0.3">
+        <animateMotion dur="20s" repeatCount="indefinite" path="M 850,60 L 50,50 L 850,60"/>
+      </path>
+    </g>
+    <!-- Fish 2 -->
+    <g>
+      <path d="M 0,0 Q 4,-2 8,0 Q 4,2 0,0 Z M -2,0 L -4,-2 M -2,0 L -4,2" fill="#6ea8d7" stroke="#6ea8d7" stroke-width="0.3">
+        <animateMotion dur="22s" repeatCount="indefinite" path="M 900,75 L 30,70 L 900,75" begin="2s"/>
+      </path>
+    </g>
+    <!-- Fish 3 -->
+    <g>
+      <path d="M 0,0 Q 3,-1.5 6,0 Q 3,1.5 0,0 Z M -1.5,0 L -3,-1.5 M -1.5,0 L -3,1.5" fill="#5a9abd" stroke="#5a9abd" stroke-width="0.3">
+        <animateMotion dur="18s" repeatCount="indefinite" path="M 880,220 L 20,230 L 880,220" begin="4s"/>
+      </path>
+    </g>
+    <!-- Fish 4 -->
+    <g>
+      <path d="M 0,0 Q 3,-1.5 6,0 Q 3,1.5 0,0 Z M -1.5,0 L -3,-1.5 M -1.5,0 L -3,1.5" fill="#5a9abd" stroke="#5a9abd" stroke-width="0.3">
+        <animateMotion dur="25s" repeatCount="indefinite" path="M 870,245 L 40,240 L 870,245" begin="6s"/>
+      </path>
+    </g>
+  </g>
+
+  <!-- ====== TITLE TEXT (single element — no gaps) ====== -->
+  <text x="450" y="130" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="64" font-weight="800" fill="#e2e8f0" text-anchor="middle" letter-spacing="2">S<tspan fill="url(#aiGlow)" filter="url(#textGlow)">[AI]</tspan>RA</text>
+  <!-- Pulsing glow overlay on [AI] -->
+  <text x="450" y="130" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="64" font-weight="800" fill="transparent" text-anchor="middle" letter-spacing="2">S<tspan fill="#a78bfa">[AI]</tspan><tspan fill="transparent">RA</tspan>
+    <animate attributeName="opacity" values="0.1;0.4;0.1" dur="3s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- Subtitle — highlighted SAIRA acronym letters -->
+  <text x="450" y="165" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle" letter-spacing="1.5"><tspan fill="#a78bfa" font-weight="700">S</tspan>ystem for <tspan fill="#a78bfa" font-weight="700">A</tspan>gentic <tspan fill="#a78bfa" font-weight="700">I</tspan>ntelligence <tspan fill="#a78bfa" font-weight="700">R</tspan>eview &amp; <tspan fill="#a78bfa" font-weight="700">A</tspan>nalysis</text>
+
+  <!-- Tagline -->
+  <text x="450" y="195" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#64748b" text-anchor="middle" letter-spacing="1">Automated quality assessment platform for AI agents</text>
+
+  <!-- Decorative line under title -->
+  <line x1="350" y1="175" x2="550" y2="175" stroke="url(#aiGlow)" stroke-width="1" opacity="0.3"/>
+
+  <!-- ====== MAGNIFYING GLASS + SUNKEN BOOKS ("deep" learning) ====== -->
+  <!-- Scene group: books scattered on ocean floor, lens hovers over center -->
+  <g transform="translate(702, 85)">
+    <animateTransform attributeName="transform" type="translate" values="702,85; 707,78; 702,85" dur="4s" repeatCount="indefinite"/>
+
+    <!-- === BOOKS (clearly visible, spread wide beyond lens) === -->
+
+    <!-- Book A - far left, leaning against others (OUTSIDE lens) -->
+    <g transform="translate(-35, 45) rotate(-20)">
+      <rect x="0" y="0" width="32" height="46" rx="2" fill="#352a5e" stroke="#5a4a8a" stroke-width="1" opacity="0.8"/>
+      <line x1="5" y1="3" x2="5" y2="43" stroke="#6a5aaa" stroke-width="1.2" opacity="0.6"/>
+      <line x1="10" y1="10" x2="28" y2="10" stroke="#5a4a8a" stroke-width="0.6" opacity="0.4"/>
+      <line x1="10" y1="15" x2="26" y2="15" stroke="#5a4a8a" stroke-width="0.6" opacity="0.4"/>
+      <line x1="10" y1="20" x2="27" y2="20" stroke="#5a4a8a" stroke-width="0.6" opacity="0.4"/>
+      <line x1="10" y1="25" x2="24" y2="25" stroke="#5a4a8a" stroke-width="0.6" opacity="0.4"/>
+      <text x="18" y="39" font-family="'Courier New', monospace" font-size="9" fill="#a78bfa" text-anchor="middle" font-weight="bold" opacity="0.75">RL</text>
+    </g>
+
+    <!-- Book B - center-left, upright (PARTIALLY under lens) -->
+    <g transform="translate(-15, 30) rotate(-5)">
+      <rect x="0" y="0" width="28" height="50" rx="2" fill="#1e2a4e" stroke="#4a5a8a" stroke-width="1" opacity="0.75"/>
+      <line x1="5" y1="3" x2="5" y2="47" stroke="#5a6a9a" stroke-width="1" opacity="0.55"/>
+      <line x1="9" y1="8" x2="24" y2="8" stroke="#3a4a7a" stroke-width="0.5" opacity="0.35"/>
+      <line x1="9" y1="13" x2="22" y2="13" stroke="#3a4a7a" stroke-width="0.5" opacity="0.35"/>
+      <line x1="9" y1="18" x2="24" y2="18" stroke="#3a4a7a" stroke-width="0.5" opacity="0.35"/>
+      <!-- Neural net icon -->
+      <circle cx="16" cy="28" r="3" fill="none" stroke="#7ebde7" stroke-width="0.7" opacity="0.5"/>
+      <circle cx="9" cy="36" r="3" fill="none" stroke="#7ebde7" stroke-width="0.7" opacity="0.5"/>
+      <circle cx="23" cy="36" r="3" fill="none" stroke="#7ebde7" stroke-width="0.7" opacity="0.5"/>
+      <line x1="16" y1="31" x2="9" y2="33" stroke="#7ebde7" stroke-width="0.5" opacity="0.4"/>
+      <line x1="16" y1="31" x2="23" y2="33" stroke="#7ebde7" stroke-width="0.5" opacity="0.4"/>
+      <text x="16" y="46" font-family="'Courier New', monospace" font-size="5" fill="#7ebde7" text-anchor="middle" opacity="0.5">NLP</text>
+    </g>
+
+    <!-- Book C - center, lying flat on bottom (UNDER lens) -->
+    <g transform="translate(-25, 78) rotate(-3)">
+      <rect x="0" y="0" width="55" height="11" rx="2" fill="#2a2050" stroke="#5a4a8a" stroke-width="0.8" opacity="0.7"/>
+      <rect x="2" y="2" width="51" height="7" rx="1" fill="#221a45" opacity="0.4"/>
+      <text x="27" y="8" font-family="'Courier New', monospace" font-size="6" fill="#c4b5fd" text-anchor="middle" font-weight="bold" opacity="0.65">DEEP LEARNING</text>
+    </g>
+
+    <!-- Book D - right side, tilted (PARTIALLY under lens) -->
+    <g transform="translate(35, 35) rotate(10)">
+      <rect x="0" y="0" width="30" height="42" rx="2" fill="#1e3048" stroke="#3a5a7a" stroke-width="1" opacity="0.75"/>
+      <line x1="5" y1="3" x2="5" y2="39" stroke="#4a6a8a" stroke-width="1" opacity="0.5"/>
+      <line x1="9" y1="9" x2="26" y2="9" stroke="#3a5a7a" stroke-width="0.5" opacity="0.35"/>
+      <line x1="9" y1="14" x2="24" y2="14" stroke="#3a5a7a" stroke-width="0.5" opacity="0.35"/>
+      <!-- Brain/AI icon -->
+      <circle cx="17" cy="26" r="6" fill="none" stroke="#6ea8d7" stroke-width="0.6" opacity="0.45"/>
+      <path d="M 14,24 Q 17,20 20,24 M 13,27 Q 17,31 21,27" fill="none" stroke="#6ea8d7" stroke-width="0.5" opacity="0.4"/>
+      <text x="17" y="38" font-family="'Courier New', monospace" font-size="5" fill="#6ea8d7" text-anchor="middle" opacity="0.55">AI</text>
+    </g>
+
+    <!-- Book E - far right, small, half-buried (OUTSIDE lens) -->
+    <g transform="translate(68, 55) rotate(25)">
+      <rect x="0" y="0" width="24" height="34" rx="2" fill="#1a2540" stroke="#3a4a6a" stroke-width="0.8" opacity="0.7"/>
+      <line x1="4" y1="2" x2="4" y2="32" stroke="#4a5a7a" stroke-width="0.8" opacity="0.5"/>
+      <line x1="8" y1="7" x2="20" y2="7" stroke="#3a4a6a" stroke-width="0.4" opacity="0.3"/>
+      <line x1="8" y1="11" x2="18" y2="11" stroke="#3a4a6a" stroke-width="0.4" opacity="0.3"/>
+      <text x="14" y="26" font-family="'Courier New', monospace" font-size="6" fill="#a78bfa" text-anchor="middle" font-weight="bold" opacity="0.6">LLM</text>
+    </g>
+
+    <!-- Sand / ocean floor particles -->
+    <circle cx="-30" cy="92" r="1.2" fill="#4a3a70" opacity="0.35"/>
+    <circle cx="-10" cy="95" r="0.8" fill="#3a3060" opacity="0.3"/>
+    <circle cx="10" cy="93" r="1" fill="#4a3a70" opacity="0.25"/>
+    <circle cx="30" cy="94" r="0.7" fill="#3a3060" opacity="0.3"/>
+    <circle cx="50" cy="92" r="0.9" fill="#4a3a70" opacity="0.25"/>
+    <circle cx="75" cy="93" r="1.1" fill="#3a3060" opacity="0.3"/>
+    <circle cx="90" cy="91" r="0.8" fill="#4a3a70" opacity="0.2"/>
+    <!-- Seaweed/algae wisps -->
+    <path d="M -25,90 Q -23,80 -26,70 Q -23,60 -25,52" fill="none" stroke="#2a5a4a" stroke-width="1" opacity="0.2"/>
+    <path d="M 85,90 Q 87,78 84,68 Q 87,58 85,50" fill="none" stroke="#2a5a4a" stroke-width="0.8" opacity="0.15"/>
+
+    <!-- === MAGNIFYING GLASS (hovering over books) === -->
+
+    <!-- Lens background — darker to contrast with magnified content -->
+    <circle cx="18" cy="35" r="36" fill="#080c20" opacity="0.6"/>
+
+    <!-- ZOOMED content inside lens (clipped, scaled 1.7x, brighter) -->
+    <g clip-path="url(#lensClip)">
+      <g transform="translate(18, 25) scale(1.7) translate(-12, -18)">
+        <!-- Magnified Book B -->
+        <g transform="translate(-15, 30) rotate(-5)">
+          <rect x="0" y="0" width="28" height="50" rx="2" fill="#2e3a5e" stroke="#6a7aaa" stroke-width="1" opacity="0.95"/>
+          <line x1="5" y1="3" x2="5" y2="47" stroke="#7a8aba" stroke-width="1" opacity="0.7"/>
+          <line x1="9" y1="8" x2="24" y2="8" stroke="#5a6a9a" stroke-width="0.6" opacity="0.5"/>
+          <line x1="9" y1="13" x2="22" y2="13" stroke="#5a6a9a" stroke-width="0.6" opacity="0.5"/>
+          <line x1="9" y1="18" x2="24" y2="18" stroke="#5a6a9a" stroke-width="0.6" opacity="0.5"/>
+          <circle cx="16" cy="28" r="3" fill="none" stroke="#aed8f7" stroke-width="0.8" opacity="0.8"/>
+          <circle cx="9" cy="36" r="3" fill="none" stroke="#aed8f7" stroke-width="0.8" opacity="0.8"/>
+          <circle cx="23" cy="36" r="3" fill="none" stroke="#aed8f7" stroke-width="0.8" opacity="0.8"/>
+          <line x1="16" y1="31" x2="9" y2="33" stroke="#aed8f7" stroke-width="0.6" opacity="0.7"/>
+          <line x1="16" y1="31" x2="23" y2="33" stroke="#aed8f7" stroke-width="0.6" opacity="0.7"/>
+          <text x="16" y="46" font-family="'Courier New', monospace" font-size="5" fill="#aed8f7" text-anchor="middle" opacity="0.8">NLP</text>
+        </g>
+
+        <!-- Magnified Book C - flat -->
+        <g transform="translate(-25, 78) rotate(-3)">
+          <rect x="0" y="0" width="55" height="11" rx="2" fill="#3a3070" stroke="#6a5aaa" stroke-width="0.8" opacity="0.9"/>
+          <text x="27" y="8" font-family="'Courier New', monospace" font-size="6" fill="#e0d5ff" text-anchor="middle" font-weight="bold" opacity="0.9">DEEP LEARNING</text>
+        </g>
+
+        <!-- Magnified Book D -->
+        <g transform="translate(35, 35) rotate(10)">
+          <rect x="0" y="0" width="30" height="42" rx="2" fill="#2e4058" stroke="#5a7a9a" stroke-width="1" opacity="0.9"/>
+          <line x1="5" y1="3" x2="5" y2="39" stroke="#6a8aaa" stroke-width="1" opacity="0.65"/>
+          <line x1="9" y1="9" x2="26" y2="9" stroke="#5a7a9a" stroke-width="0.6" opacity="0.5"/>
+          <line x1="9" y1="14" x2="24" y2="14" stroke="#5a7a9a" stroke-width="0.6" opacity="0.5"/>
+          <circle cx="17" cy="26" r="6" fill="none" stroke="#9ec8e7" stroke-width="0.7" opacity="0.7"/>
+          <path d="M 14,24 Q 17,20 20,24 M 13,27 Q 17,31 21,27" fill="none" stroke="#9ec8e7" stroke-width="0.6" opacity="0.65"/>
+          <text x="17" y="38" font-family="'Courier New', monospace" font-size="5" fill="#9ec8e7" text-anchor="middle" opacity="0.8">AI</text>
+        </g>
+      </g>
+
+      <!-- Subtle lens tint -->
+      <circle cx="18" cy="35" r="36" fill="#7c5ce0" opacity="0.04"/>
+    </g>
+
+    <!-- Lens ring (outer - metallic) -->
+    <circle cx="18" cy="35" r="36" fill="none" stroke="#b8a8e8" stroke-width="3" opacity="0.6"/>
+    <!-- Lens ring (inner bevel) -->
+    <circle cx="18" cy="35" r="33.5" fill="none" stroke="#c4b5fd" stroke-width="0.5" opacity="0.2"/>
+
+    <!-- Lens glare -->
+    <path d="M -2,22 Q 6,8 20,4" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.12"/>
+    <path d="M 0,27 Q 5,18 12,14" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity="0.08"/>
+
+    <!-- Handle -->
+    <line x1="46" y1="62" x2="76" y2="92" stroke="#5a4a7a" stroke-width="7" stroke-linecap="round" opacity="0.5"/>
+    <line x1="46" y1="62" x2="76" y2="92" stroke="#7a6a9a" stroke-width="5" stroke-linecap="round" opacity="0.4"/>
+    <line x1="46" y1="62" x2="76" y2="92" stroke="#9a8aba" stroke-width="3" stroke-linecap="round" opacity="0.35"/>
+    <line x1="47" y1="61" x2="50" y2="64" stroke="#b8a8e8" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+    <!-- Handle end cap -->
+    <circle cx="76" cy="92" r="4" fill="#5a4a7a" opacity="0.35"/>
+    <circle cx="76" cy="92" r="2.5" fill="#7a6a9a" opacity="0.25"/>
+
+    <!-- Pulsing scan ring -->
+    <circle cx="18" cy="35" r="34" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.15">
+      <animate attributeName="r" values="34;42;34" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.15;0.02;0.15" dur="3s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Data particles rising from books through lens -->
+    <circle cx="10" cy="75" r="1.5" fill="#a78bfa" opacity="0">
+      <animate attributeName="cy" values="75;35;-10" dur="4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.6;0" dur="4s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="1.5;2;0.5" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="25" cy="70" r="1.2" fill="#7c5ce0" opacity="0">
+      <animate attributeName="cy" values="70;30;-8" dur="5s" begin="1.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.5;0" dur="5s" begin="1.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="5" cy="68" r="1" fill="#c4b5fd" opacity="0">
+      <animate attributeName="cy" values="68;28;-5" dur="3.5s" begin="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.5;0" dur="3.5s" begin="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="32" cy="72" r="0.8" fill="#a78bfa" opacity="0">
+      <animate attributeName="cy" values="72;32;-8" dur="4.5s" begin="0.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.45;0" dur="4.5s" begin="0.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ====== Corner accents ====== -->
+  <g stroke="#7c5ce0" stroke-width="1" opacity="0.15" fill="none">
+    <path d="M 20,30 L 20,20 L 30,20"/>
+    <path d="M 870,20 L 880,20 L 880,30"/>
+    <path d="M 880,250 L 880,260 L 870,260"/>
+    <path d="M 30,260 L 20,260 L 20,250"/>
+  </g>
+</svg>
