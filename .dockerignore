@@ -1,0 +1,13 @@
+target/
+frontend/node_modules/
+frontend/dist/
+.git/
+.idea/
+*.iml
+logs/
+.claude/
+.serena/
+specs/
+.env
+application-local.yml
+docs/

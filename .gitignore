@@ -28,3 +28,8 @@ logs/
 
 # Specs (local planning)
 specs/
+
+# Claude data
+.claude/data/
+.claude/plans/
+__pycache__/
