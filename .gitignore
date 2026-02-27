@@ -36,8 +36,5 @@ specs/
 .claude/plans/
 __pycache__/
 
-# Serena memories (local)
-.serena/memories/
-
 # Frontend build output in Spring resources
 src/main/resources/static/
