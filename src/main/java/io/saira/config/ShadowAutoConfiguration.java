@@ -14,15 +14,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import io.saira.service.shadow.ShadowChatClientRegistry;
+import io.saira.service.shadow.ShadowModelRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Автоконфигурация shadow-провайдеров.
  *
- * <p>Создаёт ShadowChatClientRegistry и AsyncTaskExecutor для shadow-вызовов.
+ * <p>Создаёт ShadowModelRegistry и AsyncTaskExecutor для shadow-вызовов.
  * Обнаруживает GigaChat ChatModel бины из Spring контекста и регистрирует
- * OpenRouter-совместимые провайдеры через mutate() паттерн.
+ * OpenRouter-совместимые провайдеры.
  *
  * <p>Активируется при saira.shadow.enabled=true (по умолчанию включена).
  */
@@ -39,20 +39,20 @@ public class ShadowAutoConfiguration {
     private static final String PROVIDER_GIGACHAT = "gigachat";
 
     /**
-     * Создаёт реестр ChatClient для shadow-вызовов.
+     * Создаёт реестр моделей для shadow-вызовов.
      *
      * <p>При старте регистрирует базовые модели для каждого включённого провайдера:
-     * OpenRouter через mutate() паттерн, GigaChat через auto-detection бинов.
+     * OpenRouter через OpenAiChatModel, GigaChat через auto-detection бинов.
      *
-     * @param properties     конфигурация shadow-провайдеров
-     * @param chatModels     все ChatModel бины из Spring контекста (может быть пустой)
-     * @return настроенный ShadowChatClientRegistry
+     * @param properties конфигурация shadow-провайдеров
+     * @param chatModels все ChatModel бины из Spring контекста (может быть пустой)
+     * @return настроенный ShadowModelRegistry
      */
     @Bean
-    public ShadowChatClientRegistry shadowChatClientRegistry(
+    public ShadowModelRegistry shadowModelRegistry(
             final ShadowProperties properties, @Autowired(required = false) final Map<String, ChatModel> chatModels) {
 
-        ShadowChatClientRegistry registry = new ShadowChatClientRegistry();
+        ShadowModelRegistry registry = new ShadowModelRegistry();
 
         Map<String, ShadowProperties.ProviderConfig> providers = properties.getProviders();
         if (providers == null || providers.isEmpty()) {
@@ -63,7 +63,7 @@ public class ShadowAutoConfiguration {
         registerOpenRouterProvider(registry, providers);
         registerGigaChatProvider(registry, providers, chatModels);
 
-        log.info("ShadowChatClientRegistry создан, доступные модели: {}", registry.getAvailableModelIds());
+        log.info("ShadowModelRegistry создан, доступные провайдеры: {}", registry.getAvailableProviders());
         return registry;
     }
 
@@ -95,13 +95,13 @@ public class ShadowAutoConfiguration {
     }
 
     /**
-     * Регистрирует OpenRouter-совместимый провайдер через mutate() паттерн.
+     * Регистрирует OpenRouter-совместимый провайдер.
      *
-     * @param registry  реестр ChatClient
+     * @param registry  реестр моделей
      * @param providers карта конфигураций провайдеров
      */
     private void registerOpenRouterProvider(
-            final ShadowChatClientRegistry registry, final Map<String, ShadowProperties.ProviderConfig> providers) {
+            final ShadowModelRegistry registry, final Map<String, ShadowProperties.ProviderConfig> providers) {
 
         ShadowProperties.ProviderConfig config = providers.get(PROVIDER_OPENROUTER);
         if (config == null || !config.isEnabled()) {
@@ -132,20 +132,19 @@ public class ShadowAutoConfiguration {
                 .defaultOptions(optionsBuilder.build())
                 .build();
 
-        registry.registerBaseApi(PROVIDER_OPENROUTER, openRouterApi);
-        registry.registerBaseModel(PROVIDER_OPENROUTER, openRouterModel);
+        registry.registerModel(PROVIDER_OPENROUTER, openRouterModel);
         log.info("OpenRouter провайдер зарегистрирован: baseUrl={}", baseUrl);
     }
 
     /**
      * Обнаруживает GigaChat ChatModel бин из Spring контекста и регистрирует его.
      *
-     * @param registry   реестр ChatClient
+     * @param registry   реестр моделей
      * @param providers  карта конфигураций провайдеров
      * @param chatModels все ChatModel бины из Spring контекста
      */
     private void registerGigaChatProvider(
-            final ShadowChatClientRegistry registry,
+            final ShadowModelRegistry registry,
             final Map<String, ShadowProperties.ProviderConfig> providers,
             final Map<String, ChatModel> chatModels) {
 
@@ -162,7 +161,7 @@ public class ShadowAutoConfiguration {
 
         chatModels.forEach((beanName, chatModel) -> {
             if (isGigaChatModel(chatModel)) {
-                registry.registerBaseModel(PROVIDER_GIGACHAT, chatModel);
+                registry.registerModel(PROVIDER_GIGACHAT, chatModel);
                 log.info("GigaChat ChatModel обнаружен: bean={}", beanName);
             }
         });

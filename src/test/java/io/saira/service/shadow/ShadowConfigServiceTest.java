@@ -37,9 +37,6 @@ class ShadowConfigServiceTest {
     @Mock
     private ShadowMapper shadowMapper;
 
-    @Mock
-    private ShadowChatClientRegistry shadowChatClientRegistry;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Nested
@@ -47,11 +44,11 @@ class ShadowConfigServiceTest {
     class CreateConfig {
 
         @Test
-        @DisplayName("should save config with ACTIVE status and register ChatClient")
-        void should_SaveConfigAndRegisterClient_When_ValidRequest() {
+        @DisplayName("should save config with ACTIVE status")
+        void should_SaveConfig_When_ValidRequest() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
 
             final ShadowConfigRequest request = ShadowConfigRequest.builder()
                     .serviceName("agent-service")
@@ -93,40 +90,6 @@ class ShadowConfigServiceTest {
             final ArgumentCaptor<ShadowConfig> captor = ArgumentCaptor.forClass(ShadowConfig.class);
             verify(shadowConfigRepository).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo("ACTIVE");
-            verify(shadowChatClientRegistry).createClientForModel(eq("openrouter"), eq("gpt-4"), any());
-        }
-
-        @Test
-        @DisplayName("should save config without registering ChatClient when registry is null")
-        void should_SaveConfigWithoutRegistry_When_RegistryNull() {
-            // given
-            final ShadowConfigService service =
-                    new ShadowConfigService(shadowConfigRepository, shadowMapper, null, objectMapper);
-
-            final ShadowConfigRequest request = ShadowConfigRequest.builder()
-                    .serviceName("agent-service")
-                    .providerName("openrouter")
-                    .modelId("gpt-4")
-                    .samplingRate(new BigDecimal("100.00"))
-                    .build();
-
-            final ShadowConfig savedEntity = ShadowConfig.builder()
-                    .id(2L)
-                    .serviceName("agent-service")
-                    .providerName("openrouter")
-                    .modelId("gpt-4")
-                    .status("ACTIVE")
-                    .build();
-            when(shadowConfigRepository.save(any(ShadowConfig.class))).thenReturn(savedEntity);
-            when(shadowMapper.toConfigResponse(savedEntity))
-                    .thenReturn(ShadowConfigResponse.builder().id(2L).build());
-
-            // when
-            final ShadowConfigResponse response = service.createConfig(request);
-
-            // then
-            assertThat(response).isNotNull();
-            verify(shadowConfigRepository).save(any(ShadowConfig.class));
         }
     }
 
@@ -135,11 +98,11 @@ class ShadowConfigServiceTest {
     class UpdateConfig {
 
         @Test
-        @DisplayName("should update config, unregister old model and register new ChatClient")
-        void should_UpdateAndReRegisterClient_When_ValidRequest() {
+        @DisplayName("should update config fields and save")
+        void should_UpdateConfig_When_ValidRequest() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
 
             final ShadowConfig existing = ShadowConfig.builder()
                     .id(1L)
@@ -169,16 +132,15 @@ class ShadowConfigServiceTest {
 
             // then
             assertThat(response).isNotNull();
-            verify(shadowChatClientRegistry).unregisterClient("gpt-3.5");
-            verify(shadowChatClientRegistry).createClientForModel(eq("openrouter"), eq("gpt-4"), any());
+            verify(shadowConfigRepository).save(any(ShadowConfig.class));
         }
 
         @Test
         @DisplayName("should throw 404 when config not found")
         void should_Throw404_When_ConfigNotFound() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
             when(shadowConfigRepository.findById(99L)).thenReturn(Optional.empty());
 
             final ShadowConfigRequest request = ShadowConfigRequest.builder()
@@ -200,11 +162,11 @@ class ShadowConfigServiceTest {
     class DeleteConfig {
 
         @Test
-        @DisplayName("should set status DISABLED and unregister ChatClient")
-        void should_DisableConfigAndUnregisterClient() {
+        @DisplayName("should set status DISABLED")
+        void should_DisableConfig() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
 
             final ShadowConfig existing = ShadowConfig.builder()
                     .id(1L)
@@ -223,15 +185,14 @@ class ShadowConfigServiceTest {
             final ArgumentCaptor<ShadowConfig> captor = ArgumentCaptor.forClass(ShadowConfig.class);
             verify(shadowConfigRepository).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo("DISABLED");
-            verify(shadowChatClientRegistry).unregisterClient("gpt-4");
         }
 
         @Test
         @DisplayName("should throw 404 when config not found")
         void should_Throw404_When_ConfigNotFound() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
             when(shadowConfigRepository.findById(99L)).thenReturn(Optional.empty());
 
             // when & then
@@ -249,8 +210,8 @@ class ShadowConfigServiceTest {
         @DisplayName("should return config response when found")
         void should_ReturnResponse_When_ConfigExists() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
 
             final ShadowConfig entity = ShadowConfig.builder()
                     .id(1L)
@@ -275,8 +236,8 @@ class ShadowConfigServiceTest {
         @DisplayName("should throw 404 when config not found")
         void should_Throw404_When_NotFound() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
             when(shadowConfigRepository.findById(99L)).thenReturn(Optional.empty());
 
             // when & then
@@ -294,8 +255,8 @@ class ShadowConfigServiceTest {
         @DisplayName("should return all configs")
         void should_ReturnAllConfigs() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
 
             final List<ShadowConfig> entities = List.of(
                     ShadowConfig.builder().id(1L).modelId("gpt-4").build(),
@@ -323,8 +284,8 @@ class ShadowConfigServiceTest {
         @DisplayName("should return active configs for given service")
         void should_ReturnActiveConfigs_When_ServiceHasConfigs() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
 
             final List<ShadowConfig> activeConfigs = List.of(ShadowConfig.builder()
                     .id(1L)
@@ -347,8 +308,8 @@ class ShadowConfigServiceTest {
         @DisplayName("should return empty list when no active configs")
         void should_ReturnEmptyList_When_NoActiveConfigs() {
             // given
-            final ShadowConfigService service = new ShadowConfigService(
-                    shadowConfigRepository, shadowMapper, shadowChatClientRegistry, objectMapper);
+            final ShadowConfigService service =
+                    new ShadowConfigService(shadowConfigRepository, shadowMapper, objectMapper);
             when(shadowConfigRepository.findByServiceNameAndStatus("unknown", "ACTIVE"))
                     .thenReturn(List.of());
 

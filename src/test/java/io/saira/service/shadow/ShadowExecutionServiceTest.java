@@ -1,6 +1,7 @@
 package io.saira.service.shadow;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -22,7 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.saira.dto.ShadowExecuteRequest;
-import io.saira.dto.ShadowResultResponse;
 import io.saira.dto.mapper.ShadowMapper;
 import io.saira.entity.AgentSpan;
 import io.saira.entity.ShadowConfig;
@@ -34,7 +34,7 @@ import io.saira.repository.AgentSpanRepository;
 class ShadowExecutionServiceTest {
 
     @Mock
-    private ShadowChatClientRegistry shadowChatClientRegistry;
+    private ShadowModelRegistry shadowModelRegistry;
 
     @Mock
     private ShadowResultService shadowResultService;
@@ -62,7 +62,7 @@ class ShadowExecutionServiceTest {
         void should_ReturnCompletedNull_When_ExecutorNull() {
             // given
             final ShadowExecutionService service = new ShadowExecutionService(
-                    shadowChatClientRegistry,
+                    shadowModelRegistry,
                     shadowResultService,
                     agentSpanRepository,
                     null,
@@ -114,8 +114,8 @@ class ShadowExecutionServiceTest {
         }
 
         @Test
-        @DisplayName("should save error result when ChatClient not found for model")
-        void should_SaveErrorResult_When_ChatClientNotFound() {
+        @DisplayName("should save error result when ChatModel not found for provider")
+        void should_SaveErrorResult_When_ChatModelNotFound() {
             // given — use a synchronous executor to run the async task inline
             final AsyncTaskExecutor syncExecutor = mock(AsyncTaskExecutor.class);
             doAnswer(invocation -> {
@@ -126,7 +126,7 @@ class ShadowExecutionServiceTest {
                     .execute(any(Runnable.class));
 
             final ShadowExecutionService service = new ShadowExecutionService(
-                    shadowChatClientRegistry,
+                    shadowModelRegistry,
                     shadowResultService,
                     agentSpanRepository,
                     syncExecutor,
@@ -138,7 +138,7 @@ class ShadowExecutionServiceTest {
             span.setRequestBody("{\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}");
             final ShadowConfig config = buildTestConfig(1L, "unknown-model");
 
-            when(shadowChatClientRegistry.getClient("unknown-model")).thenReturn(Optional.empty());
+            when(shadowModelRegistry.getModel("openrouter")).thenReturn(Optional.empty());
 
             final ShadowResult errorResult =
                     ShadowResult.builder().id(1L).status("ERROR").build();
@@ -152,7 +152,7 @@ class ShadowExecutionServiceTest {
             final ArgumentCaptor<ShadowResult> captor = ArgumentCaptor.forClass(ShadowResult.class);
             verify(shadowResultService).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo("ERROR");
-            assertThat(captor.getValue().getErrorMessage()).contains("ChatClient not found");
+            assertThat(captor.getValue().getErrorMessage()).contains("Provider not registered");
         }
     }
 
@@ -165,7 +165,7 @@ class ShadowExecutionServiceTest {
         void should_Throw404_When_SpanNotFound() {
             // given
             final ShadowExecutionService service = new ShadowExecutionService(
-                    shadowChatClientRegistry,
+                    shadowModelRegistry,
                     shadowResultService,
                     agentSpanRepository,
                     shadowExecutor,
@@ -181,17 +181,45 @@ class ShadowExecutionServiceTest {
             when(agentSpanRepository.findBySpanId("non-existent-span")).thenReturn(Optional.empty());
 
             // when & then
-            org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.executeManual(request))
+            assertThatThrownBy(() -> service.executeManual(request))
                     .isInstanceOf(ResponseStatusException.class)
                     .hasMessageContaining("Span not found");
         }
 
         @Test
-        @DisplayName("should save error result when request body has no prompt content")
-        void should_SaveErrorResult_When_RequestBodyEmpty() {
+        @DisplayName("should throw 503 when shadow registry is null")
+        void should_Throw503_When_RegistryNull() {
             // given
             final ShadowExecutionService service = new ShadowExecutionService(
-                    shadowChatClientRegistry,
+                    null,
+                    shadowResultService,
+                    agentSpanRepository,
+                    shadowExecutor,
+                    objectMapper,
+                    shadowMapper,
+                    shadowEvaluationService);
+
+            final AgentSpan span = buildTestSpan("span-001", "trace-001");
+            when(agentSpanRepository.findBySpanId("span-001")).thenReturn(Optional.of(span));
+
+            final ShadowExecuteRequest request = ShadowExecuteRequest.builder()
+                    .spanId("span-001")
+                    .modelId("gpt-4")
+                    .providerName("openrouter")
+                    .build();
+
+            // when & then
+            assertThatThrownBy(() -> service.executeManual(request))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("Shadow registry not available");
+        }
+
+        @Test
+        @DisplayName("should throw 400 when request body has no extractable messages")
+        void should_Throw400_When_RequestBodyEmpty() {
+            // given
+            final ShadowExecutionService service = new ShadowExecutionService(
+                    shadowModelRegistry,
                     shadowResultService,
                     agentSpanRepository,
                     shadowExecutor,
@@ -203,13 +231,9 @@ class ShadowExecutionServiceTest {
             span.setRequestBody(null);
             when(agentSpanRepository.findBySpanId("span-001")).thenReturn(Optional.of(span));
 
-            final ShadowResult errorResult =
-                    ShadowResult.builder().id(1L).status("ERROR").build();
-            when(shadowResultService.save(any(ShadowResult.class))).thenReturn(errorResult);
-
-            final ShadowResultResponse responseDto =
-                    ShadowResultResponse.builder().id(1L).status("ERROR").build();
-            when(shadowMapper.toResultResponse(errorResult)).thenReturn(responseDto);
+            final org.springframework.ai.chat.model.ChatModel chatModel =
+                    mock(org.springframework.ai.chat.model.ChatModel.class);
+            when(shadowModelRegistry.getModel("openrouter")).thenReturn(Optional.of(chatModel));
 
             final ShadowExecuteRequest request = ShadowExecuteRequest.builder()
                     .spanId("span-001")
@@ -217,11 +241,10 @@ class ShadowExecutionServiceTest {
                     .providerName("openrouter")
                     .build();
 
-            // when
-            final ShadowResultResponse response = service.executeManual(request);
-
-            // then
-            assertThat(response.getStatus()).isEqualTo("ERROR");
+            // when & then
+            assertThatThrownBy(() -> service.executeManual(request))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("Could not extract messages");
         }
     }
 

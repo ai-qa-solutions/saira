@@ -3,11 +3,9 @@ package io.saira.service.shadow;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Сервис CRUD-операций над shadow-правилами.
- * Управляет жизненным циклом ShadowConfig и регистрацией ChatClient в реестре.
+ * Управляет жизненным циклом ShadowConfig.
  */
 @Slf4j
 @Service
@@ -46,34 +44,27 @@ public class ShadowConfigService {
     /** Маппер сущностей в DTO. */
     private final ShadowMapper shadowMapper;
 
-    /** Реестр ChatClient для shadow-вызовов (null если shadow отключён). */
-    @Nullable private final ShadowChatClientRegistry shadowChatClientRegistry;
-
     /** Jackson ObjectMapper для сериализации modelParams. */
     private final ObjectMapper objectMapper;
 
     /**
-     * Конструктор с опциональной зависимостью от ShadowChatClientRegistry.
-     * Реестр может отсутствовать, если saira.shadow.enabled=false.
+     * Конструктор сервиса shadow-конфигураций.
      *
      * @param shadowConfigRepository репозиторий конфигураций
      * @param shadowMapper           маппер сущностей в DTO
-     * @param shadowChatClientRegistry реестр ChatClient (может быть null)
      * @param objectMapper           Jackson ObjectMapper
      */
     public ShadowConfigService(
             final ShadowConfigRepository shadowConfigRepository,
             final ShadowMapper shadowMapper,
-            @Autowired(required = false) @Nullable final ShadowChatClientRegistry shadowChatClientRegistry,
             final ObjectMapper objectMapper) {
         this.shadowConfigRepository = shadowConfigRepository;
         this.shadowMapper = shadowMapper;
-        this.shadowChatClientRegistry = shadowChatClientRegistry;
         this.objectMapper = objectMapper;
     }
 
     /**
-     * Создаёт новое shadow-правило и регистрирует ChatClient в реестре.
+     * Создаёт новое shadow-правило.
      *
      * @param request данные нового правила
      * @return созданное правило
@@ -85,7 +76,6 @@ public class ShadowConfigService {
         entity.setStatus(STATUS_ACTIVE);
         final ShadowConfig saved = shadowConfigRepository.save(entity);
 
-        registerChatClient(saved, request.getModelParams());
         log.info(
                 "Создано shadow-правило id={}, service={}, model={}",
                 saved.getId(),
@@ -97,7 +87,6 @@ public class ShadowConfigService {
 
     /**
      * Обновляет существующее shadow-правило.
-     * Перерегистрирует ChatClient при смене модели/параметров.
      *
      * @param id      идентификатор правила
      * @param request новые данные правила
@@ -107,7 +96,6 @@ public class ShadowConfigService {
     @CacheEvict(value = CACHE_ACTIVE_CONFIGS, allEntries = true)
     public ShadowConfigResponse updateConfig(final Long id, final ShadowConfigRequest request) {
         final ShadowConfig existing = findOrThrow(id);
-        final String oldModelId = existing.getModelId();
 
         existing.setServiceName(request.getServiceName());
         existing.setProviderName(request.getProviderName());
@@ -117,8 +105,6 @@ public class ShadowConfigService {
 
         final ShadowConfig saved = shadowConfigRepository.save(existing);
 
-        unregisterChatClient(oldModelId);
-        registerChatClient(saved, request.getModelParams());
         log.info("Обновлено shadow-правило id={}, model={}", saved.getId(), saved.getModelId());
 
         return shadowMapper.toConfigResponse(saved);
@@ -126,7 +112,6 @@ public class ShadowConfigService {
 
     /**
      * Мягко удаляет shadow-правило (устанавливает статус DISABLED).
-     * Удаляет ChatClient из реестра.
      *
      * @param id идентификатор правила
      */
@@ -137,7 +122,6 @@ public class ShadowConfigService {
         existing.setStatus(STATUS_DISABLED);
         shadowConfigRepository.save(existing);
 
-        unregisterChatClient(existing.getModelId());
         log.info("Деактивировано shadow-правило id={}, model={}", id, existing.getModelId());
     }
 
@@ -212,38 +196,6 @@ public class ShadowConfigService {
                 .modelParams(serializeModelParams(request.getModelParams()))
                 .samplingRate(request.getSamplingRate())
                 .build();
-    }
-
-    /**
-     * Регистрирует ChatClient для shadow-модели в реестре.
-     * Пропускает регистрацию, если реестр недоступен (shadow отключён).
-     *
-     * @param config сохранённая конфигурация
-     * @param params параметры модели
-     */
-    private void registerChatClient(final ShadowConfig config, final Map<String, Object> params) {
-        if (shadowChatClientRegistry == null) {
-            log.debug("Shadow реестр недоступен, пропуск регистрации ChatClient для модели {}", config.getModelId());
-            return;
-        }
-        try {
-            shadowChatClientRegistry.createClientForModel(config.getProviderName(), config.getModelId(), params);
-        } catch (IllegalArgumentException e) {
-            log.warn("Не удалось зарегистрировать ChatClient для модели {}: {}", config.getModelId(), e.getMessage());
-        }
-    }
-
-    /**
-     * Удаляет ChatClient из реестра.
-     * Пропускает удаление, если реестр недоступен (shadow отключён).
-     *
-     * @param modelId идентификатор модели
-     */
-    private void unregisterChatClient(final String modelId) {
-        if (shadowChatClientRegistry == null) {
-            return;
-        }
-        shadowChatClientRegistry.unregisterClient(modelId);
     }
 
     /**

@@ -109,7 +109,7 @@ function ShadowConfigList({ onEdit }: ShadowConfigListProps) {
                   {config.modelId}
                 </TableCell>
                 <TableCell className="text-right tabular-nums text-sm">
-                  {Math.round(config.samplingRate * 100)}%
+                  {Math.round(config.samplingRate)}%
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={config.status} />

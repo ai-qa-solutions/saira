@@ -2,14 +2,21 @@ package io.saira.service.shadow;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.AsyncTaskExecutor;
@@ -20,6 +27,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -37,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>Поддерживает два режима: асинхронный (при перехвате ingestion span-ов)
  * и синхронный (ручной shadow-тест через REST API).
- * Использует ShadowChatClientRegistry для получения ChatClient по modelId.
+ * Использует ShadowModelRegistry для получения ChatModel по провайдеру.
  */
 @Slf4j
 @Service
@@ -55,8 +63,8 @@ public class ShadowExecutionService {
     /** Количество наносекунд в одной миллисекунде. */
     private static final long NANOS_PER_MILLI = 1_000_000L;
 
-    /** Реестр ChatClient для shadow-вызовов (null если shadow отключён). */
-    @Nullable private final ShadowChatClientRegistry shadowChatClientRegistry;
+    /** Реестр ChatModel для shadow-вызовов (null если shadow отключён). */
+    @Nullable private final ShadowModelRegistry shadowModelRegistry;
 
     /** Сервис сохранения shadow-результатов. */
     private final ShadowResultService shadowResultService;
@@ -79,23 +87,23 @@ public class ShadowExecutionService {
     /**
      * Конструктор с опциональными зависимостями от shadow-компонентов.
      *
-     * @param shadowChatClientRegistry реестр ChatClient (может быть null)
-     * @param shadowResultService      сервис сохранения результатов
-     * @param agentSpanRepository      репозиторий span-ов
-     * @param shadowExecutor           пул потоков для async вызовов (может быть null)
-     * @param objectMapper             Jackson ObjectMapper
-     * @param shadowMapper             MapStruct маппер
-     * @param shadowEvaluationService  сервис оценки (может быть null)
+     * @param shadowModelRegistry     реестр ChatModel (может быть null)
+     * @param shadowResultService     сервис сохранения результатов
+     * @param agentSpanRepository     репозиторий span-ов
+     * @param shadowExecutor          пул потоков для async вызовов (может быть null)
+     * @param objectMapper            Jackson ObjectMapper
+     * @param shadowMapper            MapStruct маппер
+     * @param shadowEvaluationService сервис оценки (может быть null)
      */
     public ShadowExecutionService(
-            @Autowired(required = false) @Nullable final ShadowChatClientRegistry shadowChatClientRegistry,
+            @Autowired(required = false) @Nullable final ShadowModelRegistry shadowModelRegistry,
             final ShadowResultService shadowResultService,
             final AgentSpanRepository agentSpanRepository,
             @Autowired(required = false) @Qualifier("shadowExecutor") @Nullable final AsyncTaskExecutor shadowExecutor,
             final ObjectMapper objectMapper,
             final ShadowMapper shadowMapper,
             @Autowired(required = false) @Nullable final ShadowEvaluationService shadowEvaluationService) {
-        this.shadowChatClientRegistry = shadowChatClientRegistry;
+        this.shadowModelRegistry = shadowModelRegistry;
         this.shadowResultService = shadowResultService;
         this.agentSpanRepository = agentSpanRepository;
         this.shadowExecutor = shadowExecutor;
@@ -141,15 +149,30 @@ public class ShadowExecutionService {
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Span not found: " + request.getSpanId()));
 
-        final ShadowConfig manualConfig = buildManualConfig(request);
-        ensureChatClientAvailable(request.getProviderName(), request.getModelId(), request);
+        if (shadowModelRegistry == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Shadow registry not available");
+        }
 
-        final ShadowResult result = executeShadowCall(span, manualConfig);
+        final ChatModel chatModel = shadowModelRegistry
+                .getModel(request.getProviderName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Provider not registered: " + request.getProviderName()));
+
+        final List<Message> messages = extractMessages(span.getRequestBody());
+        if (messages.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Could not extract messages from span request body");
+        }
+
+        final ShadowConfig manualConfig = buildManualConfig(request);
+        final ChatOptions options = buildManualChatOptions(request);
+
+        final ShadowResult result = callChatModelAndSave(chatModel, messages, options, span, manualConfig);
         return shadowMapper.toResultResponse(result);
     }
 
     /**
-     * Выполняет shadow-вызов: парсит requestBody, вызывает ChatClient, сохраняет результат.
+     * Выполняет shadow-вызов: парсит requestBody, вызывает ChatModel, сохраняет результат.
      *
      * @param span   оригинальный span
      * @param config shadow-конфигурация
@@ -159,40 +182,170 @@ public class ShadowExecutionService {
         final String modelId = config.getModelId();
         log.debug("Выполнение shadow-вызова: span={}, model={}", span.getSpanId(), modelId);
 
-        if (shadowChatClientRegistry == null) {
+        if (shadowModelRegistry == null) {
             log.warn("Shadow реестр не доступен, пропуск вызова для model={}", modelId);
             return saveErrorResult(span, config, "Shadow registry is not available");
         }
 
-        final Optional<ChatClient> clientOpt = shadowChatClientRegistry.getClient(modelId);
-        if (clientOpt.isEmpty()) {
-            log.warn("ChatClient не найден для модели: {}", modelId);
-            return saveErrorResult(span, config, "ChatClient not found for model: " + modelId);
+        final Optional<ChatModel> modelOpt = shadowModelRegistry.getModel(config.getProviderName());
+        if (modelOpt.isEmpty()) {
+            log.warn("ChatModel не найден для провайдера: {}", config.getProviderName());
+            return saveErrorResult(span, config, "Provider not registered: " + config.getProviderName());
         }
 
-        final String promptContent = extractPromptContent(span.getRequestBody());
-        if (promptContent == null || promptContent.isBlank()) {
-            return saveErrorResult(span, config, "Could not extract prompt from request body");
+        final List<Message> messages = extractMessages(span.getRequestBody());
+        if (messages.isEmpty()) {
+            return saveErrorResult(span, config, "Could not extract messages from request body");
         }
 
-        return callChatClientAndSave(clientOpt.get(), promptContent, span, config);
+        final ChatOptions options = buildChatOptions(config);
+        return callChatModelAndSave(modelOpt.get(), messages, options, span, config);
     }
 
     /**
-     * Вызывает ChatClient и сохраняет результат с метриками латентности и токенов.
+     * Строит ChatOptions из параметров ShadowConfig.
      *
-     * @param chatClient    клиент для вызова модели
-     * @param promptContent текст промпта
-     * @param span          оригинальный span
-     * @param config        shadow-конфигурация
+     * @param config shadow-конфигурация с modelParams JSON
+     * @return ChatOptions для вызова модели
+     */
+    private ChatOptions buildChatOptions(final ShadowConfig config) {
+        ChatOptions.Builder builder = ChatOptions.builder().model(config.getModelId());
+
+        Map<String, Object> params = parseModelParams(config.getModelParams());
+        Double temperature = extractParam(params, "temperature", Double.class);
+        Integer maxTokens = extractParam(params, "maxTokens", Integer.class);
+
+        if (temperature != null) {
+            builder.temperature(temperature);
+        }
+        if (maxTokens != null) {
+            builder.maxTokens(maxTokens);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Строит ChatOptions из параметров ручного запроса.
+     *
+     * @param request параметры ручного shadow-теста
+     * @return ChatOptions для вызова модели
+     */
+    private ChatOptions buildManualChatOptions(final ShadowExecuteRequest request) {
+        ChatOptions.Builder builder = ChatOptions.builder().model(request.getModelId());
+        if (request.getTemperature() != null) {
+            builder.temperature(request.getTemperature().doubleValue());
+        }
+        if (request.getMaxTokens() != null) {
+            builder.maxTokens(request.getMaxTokens());
+        }
+        return builder.build();
+    }
+
+    /**
+     * Парсит JSON-строку параметров модели в Map.
+     *
+     * @param json JSON-строка с параметрами модели
+     * @return Map с параметрами или пустая Map при ошибке
+     */
+    private Map<String, Object> parseModelParams(final String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (JsonProcessingException e) {
+            log.warn("Невалидный JSON modelParams: {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /**
+     * Извлекает типизированный параметр из Map с безопасным приведением типов.
+     *
+     * @param params Map с параметрами
+     * @param key    ключ параметра
+     * @param type   ожидаемый тип
+     * @param <T>    тип значения
+     * @return значение параметра или null
+     */
+    @SuppressWarnings("unchecked")
+    private <T> T extractParam(final Map<String, Object> params, final String key, final Class<T> type) {
+        if (params == null) {
+            return null;
+        }
+        Object value = params.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (type.isInstance(value)) {
+            return (T) value;
+        }
+        if (type == Double.class && value instanceof Number number) {
+            return (T) Double.valueOf(number.doubleValue());
+        }
+        if (type == Integer.class && value instanceof Number number) {
+            return (T) Integer.valueOf(number.intValue());
+        }
+        return null;
+    }
+
+    /**
+     * Извлекает список сообщений из JSON request body span-а.
+     *
+     * <p>Поддерживает форматы:
+     * <ul>
+     *   <li>OpenAI-совместимый: {@code {"messages": [{"role": "user", "content": "..."}]}}</li>
+     *   <li>Простой текст: если JSON не парсится, оборачивает в UserMessage</li>
+     * </ul>
+     *
+     * @param requestBody JSON-строка тела запроса
+     * @return список Message для Prompt или пустой список
+     */
+    private List<Message> extractMessages(final String requestBody) {
+        if (requestBody == null || requestBody.isBlank()) {
+            return List.of();
+        }
+        try {
+            JsonNode root = objectMapper.readTree(requestBody);
+            JsonNode messagesNode = root.get("messages");
+            if (messagesNode == null || !messagesNode.isArray() || messagesNode.isEmpty()) {
+                return List.of(new UserMessage(requestBody));
+            }
+            List<Message> messages = new ArrayList<>();
+            for (JsonNode msgNode : messagesNode) {
+                String role = msgNode.has("role") ? msgNode.get("role").asText() : "user";
+                String content = msgNode.has("content") ? msgNode.get("content").asText() : "";
+                switch (role) {
+                    case "system" -> messages.add(new SystemMessage(content));
+                    case "assistant" -> messages.add(new AssistantMessage(content));
+                    default -> messages.add(new UserMessage(content));
+                }
+            }
+            return messages.isEmpty() ? List.of(new UserMessage(requestBody)) : messages;
+        } catch (JsonProcessingException e) {
+            return List.of(new UserMessage(requestBody));
+        }
+    }
+
+    /**
+     * Вызывает ChatModel и сохраняет результат с метриками латентности и токенов.
+     *
+     * @param chatModel ChatModel для вызова
+     * @param messages  список сообщений для Prompt
+     * @param options   параметры вызова (model, temperature, maxTokens)
+     * @param span      оригинальный span
+     * @param config    shadow-конфигурация
      * @return сохранённый ShadowResult
      */
-    private ShadowResult callChatClientAndSave(
-            final ChatClient chatClient, final String promptContent, final AgentSpan span, final ShadowConfig config) {
+    private ShadowResult callChatModelAndSave(
+            final ChatModel chatModel,
+            final List<Message> messages,
+            final ChatOptions options,
+            final AgentSpan span,
+            final ShadowConfig config) {
         try {
             final long startNanos = System.nanoTime();
-            final ChatResponse chatResponse =
-                    chatClient.prompt().user(promptContent).call().chatResponse();
+            final ChatResponse chatResponse = chatModel.call(new Prompt(messages, options));
             final long latencyMs = (System.nanoTime() - startNanos) / NANOS_PER_MILLI;
 
             final String responseContent = extractResponseContent(chatResponse);
@@ -203,7 +356,7 @@ public class ShadowExecutionService {
                     .sourceSpanId(span.getSpanId())
                     .shadowConfigId(config.getId())
                     .modelId(config.getModelId())
-                    .requestBody(promptContent)
+                    .requestBody(span.getRequestBody())
                     .responseBody(responseContent)
                     .latencyMs(latencyMs)
                     .inputTokens(inputTokens)
@@ -215,7 +368,7 @@ public class ShadowExecutionService {
             return shadowResultService.save(result);
         } catch (Exception e) {
             log.error(
-                    "Ошибка shadow-вызова для span={}, model={}: {}",
+                    "Ошибка shadow-вызова: span={}, model={}: {}",
                     span.getSpanId(),
                     config.getModelId(),
                     e.getMessage());
@@ -224,62 +377,9 @@ public class ShadowExecutionService {
     }
 
     /**
-     * Извлекает текст промпта из JSON request body span-а.
-     *
-     * <p>Поддерживает форматы:
-     * <ul>
-     *   <li>OpenAI-совместимый: {@code {"messages": [{"role": "user", "content": "..."}]}}</li>
-     *   <li>Простой текст: если JSON не парсится, возвращает как есть</li>
-     * </ul>
-     *
-     * @param requestBody JSON-строка тела запроса
-     * @return извлечённый текст промпта или null
-     */
-    private String extractPromptContent(final String requestBody) {
-        if (requestBody == null || requestBody.isBlank()) {
-            return null;
-        }
-
-        try {
-            final JsonNode root = objectMapper.readTree(requestBody);
-            return extractFromOpenAiFormat(root);
-        } catch (JsonProcessingException e) {
-            log.debug("Request body не является валидным JSON, используем как plain text");
-            return requestBody;
-        }
-    }
-
-    /**
-     * Извлекает последнее user-сообщение из OpenAI-совместимого формата.
-     *
-     * @param root корневой JSON-узел
-     * @return текст последнего user-сообщения или весь request как строка
-     */
-    private String extractFromOpenAiFormat(final JsonNode root) {
-        final JsonNode messagesNode = root.get("messages");
-        if (messagesNode == null || !messagesNode.isArray() || messagesNode.isEmpty()) {
-            return root.toString();
-        }
-
-        String lastUserContent = null;
-        for (final JsonNode messageNode : messagesNode) {
-            final JsonNode roleNode = messageNode.get("role");
-            final JsonNode contentNode = messageNode.get("content");
-            if (roleNode != null && "user".equals(roleNode.asText()) && contentNode != null) {
-                lastUserContent = contentNode.asText();
-            }
-        }
-
-        if (lastUserContent != null) {
-            return lastUserContent;
-        }
-        return root.toString();
-    }
-
-    /**
      * Извлекает текстовый контент из ChatResponse.
      *
-     * @param chatResponse ответ ChatClient
+     * @param chatResponse ответ ChatModel
      * @return текст ответа или пустая строка
      */
     private String extractResponseContent(final ChatResponse chatResponse) {
@@ -298,7 +398,7 @@ public class ShadowExecutionService {
     /**
      * Извлекает количество входных токенов из метаданных ChatResponse.
      *
-     * @param chatResponse ответ ChatClient
+     * @param chatResponse ответ ChatModel
      * @return количество входных токенов или null
      */
     private Integer extractInputTokens(final ChatResponse chatResponse) {
@@ -315,7 +415,7 @@ public class ShadowExecutionService {
     /**
      * Извлекает количество выходных токенов из метаданных ChatResponse.
      *
-     * @param chatResponse ответ ChatClient
+     * @param chatResponse ответ ChatModel
      * @return количество выходных токенов или null
      */
     private Integer extractOutputTokens(final ChatResponse chatResponse) {
@@ -362,38 +462,6 @@ public class ShadowExecutionService {
                 .modelId(request.getModelId())
                 .samplingRate(BigDecimal.valueOf(100))
                 .build();
-    }
-
-    /**
-     * Обеспечивает доступность ChatClient для указанной модели.
-     * Если клиент не зарегистрирован, пытается создать его динамически.
-     *
-     * @param providerName имя провайдера
-     * @param modelId      идентификатор модели
-     * @param request      параметры запроса (temperature, maxTokens)
-     */
-    private void ensureChatClientAvailable(
-            final String providerName, final String modelId, final ShadowExecuteRequest request) {
-        if (shadowChatClientRegistry == null) {
-            return;
-        }
-        if (shadowChatClientRegistry.hasClient(modelId)) {
-            return;
-        }
-
-        final Map<String, Object> params = new HashMap<>();
-        if (request.getTemperature() != null) {
-            params.put("temperature", request.getTemperature().doubleValue());
-        }
-        if (request.getMaxTokens() != null) {
-            params.put("maxTokens", request.getMaxTokens());
-        }
-
-        try {
-            shadowChatClientRegistry.createClientForModel(providerName, modelId, params);
-        } catch (IllegalArgumentException e) {
-            log.warn("Не удалось создать ChatClient для модели {}: {}", modelId, e.getMessage());
-        }
     }
 
     /**

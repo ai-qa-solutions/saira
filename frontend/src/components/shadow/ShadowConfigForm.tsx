@@ -86,7 +86,7 @@ function ShadowConfigForm({
   );
   const [maxTokens, setMaxTokens] = useState(getInitialMaxTokens(editConfig));
   const [samplingRate, setSamplingRate] = useState(
-    editConfig ? Math.round(editConfig.samplingRate * 100) : 10,
+    editConfig ? Math.round(editConfig.samplingRate) : 10,
   );
 
   /** Tracks the last provider so we can reset modelId on provider change. */
@@ -117,7 +117,7 @@ function ShadowConfigForm({
         temperature,
         maxTokens,
       },
-      samplingRate: samplingRate / 100,
+      samplingRate: samplingRate,
     };
 
     if (isEditing) {
