@@ -1,0 +1,92 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "test-agent-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "traceId": "ASNFZ4mrze8BI0VniavN7w==",
+              "spanId": "ASNFZ4mrze8=",
+              "name": "POST /v1/completions",
+              "kind": 3,
+              "startTimeUnixNano": "1700000000000000000",
+              "endTimeUnixNano": "1700000001000000000",
+              "attributes": [
+                {
+                  "key": "span.kind",
+                  "value": { "stringValue": "client" }
+                },
+                {
+                  "key": "http.url",
+                  "value": { "stringValue": "https://api.openai.com/v1/completions" }
+                },
+                {
+                  "key": "method",
+                  "value": { "stringValue": "POST" }
+                },
+                {
+                  "key": "status",
+                  "value": { "stringValue": "200" }
+                },
+                {
+                  "key": "client.name",
+                  "value": { "stringValue": "api.openai.com" }
+                }
+              ]
+            },
+            {
+              "traceId": "ASNFZ4mrze8BI0VniavN7w==",
+              "spanId": "defw0Z6r/e8=",
+              "name": "SELECT from agents",
+              "kind": 3,
+              "startTimeUnixNano": "1700000000500000000",
+              "endTimeUnixNano": "1700000000600000000",
+              "attributes": [
+                {
+                  "key": "span.kind",
+                  "value": { "stringValue": "client" }
+                },
+                {
+                  "key": "jdbc.query[0]",
+                  "value": { "stringValue": "SELECT * FROM agents WHERE id = ?" }
+                }
+              ]
+            },
+            {
+              "traceId": "ASNFZ4mrze8BI0VniavN7w==",
+              "spanId": "qrvM3e7v0BE=",
+              "name": "GET /api/v1/agents",
+              "kind": 2,
+              "startTimeUnixNano": "1700000000000000000",
+              "endTimeUnixNano": "1700000002000000000",
+              "attributes": [
+                {
+                  "key": "span.kind",
+                  "value": { "stringValue": "server" }
+                },
+                {
+                  "key": "http.url",
+                  "value": { "stringValue": "/api/v1/agents" }
+                },
+                {
+                  "key": "method",
+                  "value": { "stringValue": "GET" }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

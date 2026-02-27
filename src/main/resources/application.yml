@@ -19,12 +19,32 @@ spring:
     caffeine:
       spec: maximumSize=500,expireAfterWrite=300s
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       group-id: ${KAFKA_GROUP_ID:saira-consumer}
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      enable-auto-commit: false
+    listener:
+      ack-mode: MANUAL
+      auto-startup: ${KAFKA_LISTENER_AUTO_STARTUP:true}
+
+saira:
+  kafka:
+    topic: fp-saira-spans
+  ingest:
+    url-patterns:
+      - /completions
+      - /embeddings
+      - /mcp
+  shadow:
+    enabled: true
+    providers:
+      openrouter:
+        enabled: false
+      gigachat:
+        enabled: false
 
 management:
   endpoints:
